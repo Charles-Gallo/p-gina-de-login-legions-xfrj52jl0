@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, ShieldAlert, ShieldCheck, Loader2, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Edit, Loader2, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,10 @@ import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,15 +29,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog'
+
+type UserData = {
+  id?: string
+  nome_usuario: string
+  email: string
+  cliente_id: string
+  ativo: boolean
+}
+const initialData: UserData = { nome_usuario: '', email: '', cliente_id: '', ativo: true }
 
 export default function Users() {
   const [users, setUsers] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [clientFilter, setClientFilter] = useState<string>('all')
-  const [newUser, setNewUser] = useState({ name: '', email: '', clientId: '' })
+  const [modal, setModal] = useState<{ open: boolean; mode: 'create' | 'edit'; data: UserData }>({
+    open: false,
+    mode: 'create',
+    data: initialData,
+  })
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -47,39 +61,53 @@ export default function Users() {
 
   const fetchData = async () => {
     setIsLoading(true)
-    const [usersRes, clientsRes] = await Promise.all([
+    const [uRes, cRes] = await Promise.all([
       supabase
         .from('usuarios_cliente')
         .select('*, clientes(nome)')
         .order('created_at', { ascending: false }),
       supabase.from('clientes').select('id, nome').eq('ativo', true),
     ])
-    if (usersRes.data) setUsers(usersRes.data)
-    if (clientsRes.data) setClients(clientsRes.data)
+    if (uRes.data) setUsers(uRes.data)
+    if (cRes.data) setClients(cRes.data)
     setIsLoading(false)
   }
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newUser.clientId) return
+    if (!modal.data.cliente_id) return
     setIsSaving(true)
+    const { id, ...payload } = modal.data
 
-    const { error } = await supabase.from('usuarios_cliente').insert({
-      nome_usuario: newUser.name,
-      email: newUser.email,
-      cliente_id: newUser.clientId,
-      ativo: true,
-    })
+    const { error } = id
+      ? await supabase.from('usuarios_cliente').update(payload).eq('id', id)
+      : await supabase.from('usuarios_cliente').insert(payload)
 
     setIsSaving(false)
     if (error) {
-      toast({ variant: 'destructive', title: 'Erro ao cadastrar usuário' })
+      toast({ variant: 'destructive', title: 'Erro ao salvar usuário', description: error.message })
       return
     }
+    toast({ title: `Usuário ${id ? 'atualizado' : 'criado'} com sucesso` })
+    setModal({ open: false, mode: 'create', data: initialData })
+    fetchData()
+  }
 
-    toast({ title: 'Usuário cadastrado com sucesso' })
-    setNewUser({ name: '', email: '', clientId: '' })
-    setIsModalOpen(false)
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setIsDeleting(true)
+    const { error } = await supabase.from('usuarios_cliente').delete().eq('id', deleteId)
+    setIsDeleting(false)
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao remover usuário',
+        description: error.message,
+      })
+      return
+    }
+    toast({ title: 'Usuário removido' })
+    setDeleteId(null)
     fetchData()
   }
 
@@ -91,99 +119,24 @@ export default function Users() {
     if (!error) fetchData()
   }
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('usuarios_cliente').delete().eq('id', id)
-    if (error) {
-      toast({ variant: 'destructive', title: 'Erro ao remover usuário' })
-      return
-    }
-    toast({ title: 'Usuário removido' })
-    fetchData()
-  }
-
   const filteredUsers =
     clientFilter === 'all' ? users : users.filter((u) => u.cliente_id === clientFilter)
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 animate-slide-up">
+    <div className="mx-auto max-w-6xl space-y-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Usuários</h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Gerencie os acessos e contas vinculadas aos clientes.
+            Gerencie os acessos vinculados aos clientes.
           </p>
         </div>
-
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#1268b3] hover:bg-[#1268b3]/90 text-white shadow-sm transition-all">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
-              <DialogDescription>
-                Preencha os dados abaixo para conceder acesso a um novo usuário.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateUser} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo</Label>
-                <Input
-                  id="name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  placeholder="Ex: João da Silva"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="joao@empresa.com"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client">Cliente Vinculado</Label>
-                <Select
-                  value={newUser.clientId}
-                  onValueChange={(value) => setNewUser({ ...newUser, clientId: value })}
-                  required
-                >
-                  <SelectTrigger id="client" className="w-full focus:ring-[#1268b3]">
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  disabled={isSaving}
-                  type="submit"
-                  className="bg-[#1268b3] hover:bg-[#1268b3]/90 text-white"
-                >
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button
+          onClick={() => setModal({ open: true, mode: 'create', data: initialData })}
+          className="bg-[#1268b3] hover:bg-[#1268b3]/90 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+        </Button>
       </div>
 
       <div className="flex items-center gap-2 max-w-xs">
@@ -191,17 +144,17 @@ export default function Users() {
           htmlFor="filter-client"
           className="text-sm font-medium text-slate-600 whitespace-nowrap"
         >
-          Filtrar por Cliente:
+          Filtrar:
         </Label>
         <Select value={clientFilter} onValueChange={setClientFilter}>
           <SelectTrigger id="filter-client" className="h-9 focus:ring-[#1268b3]">
             <SelectValue placeholder="Todos os Clientes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os Clientes</SelectItem>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.nome}
+            <SelectItem value="all">Todos</SelectItem>
+            {clients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.nome}
               </SelectItem>
             ))}
           </SelectContent>
@@ -234,7 +187,7 @@ export default function Users() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={user.id} className="hover:bg-slate-50/50">
                   <TableCell className="font-medium text-slate-900">{user.nome_usuario}</TableCell>
                   <TableCell className="text-slate-600">{user.email}</TableCell>
                   <TableCell className="text-slate-600">{user.clientes?.nome}</TableCell>
@@ -251,37 +204,35 @@ export default function Users() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleStatus(user)}
-                        className={
-                          user.ativo
-                            ? 'text-[#ed1b32] hover:text-[#ed1b32] hover:bg-[#ed1b32]/10 h-8'
-                            : 'text-[#1268b3] hover:text-[#1268b3] hover:bg-[#1268b3]/10 h-8'
-                        }
+                        className={user.ativo ? 'text-[#ed1b32]' : 'text-[#1268b3]'}
+                        title={user.ativo ? 'Suspender' : 'Ativar'}
                       >
                         {user.ativo ? (
-                          <>
-                            <ShieldAlert className="mr-2 h-3.5 w-3.5" />
-                            Suspender
-                          </>
+                          <ShieldAlert className="h-4 w-4" />
                         ) : (
-                          <>
-                            <ShieldCheck className="mr-2 h-3.5 w-3.5" />
-                            Ativar
-                          </>
+                          <ShieldCheck className="h-4 w-4" />
                         )}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(user.id)}
-                        className="h-8 text-[#ed1b32] hover:text-[#ed1b32] hover:bg-[#ed1b32]/10"
+                        onClick={() => setModal({ open: true, mode: 'edit', data: user })}
+                        className="text-slate-600 hover:text-[#1268b3]"
                       >
-                        <Trash2 className="mr-2 h-3.5 w-3.5" />
-                        Deletar
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteId(user.id)}
+                        className="text-slate-600 hover:text-[#ed1b32]"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -291,6 +242,96 @@ export default function Users() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={modal.open} onOpenChange={(open) => setModal((m) => ({ ...m, open }))}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{modal.mode === 'create' ? 'Novo Usuário' : 'Editar Usuário'}</DialogTitle>
+            <DialogDescription>Preencha os dados do usuário abaixo.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome Completo</Label>
+              <Input
+                id="name"
+                value={modal.data.nome_usuario}
+                onChange={(e) =>
+                  setModal((m) => ({ ...m, data: { ...m.data, nome_usuario: e.target.value } }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={modal.data.email}
+                onChange={(e) =>
+                  setModal((m) => ({ ...m, data: { ...m.data, email: e.target.value } }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client">Cliente</Label>
+              <Select
+                value={modal.data.cliente_id}
+                onValueChange={(val) =>
+                  setModal((m) => ({ ...m, data: { ...m.data, cliente_id: val } }))
+                }
+                required
+              >
+                <SelectTrigger id="client">
+                  <SelectValue placeholder="Selecione um cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={modal.data.ativo ? 'true' : 'false'}
+                onValueChange={(val) =>
+                  setModal((m) => ({ ...m, data: { ...m.data, ativo: val === 'true' } }))
+                }
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button
+                disabled={isSaving}
+                type="submit"
+                className="bg-[#1268b3] hover:bg-[#1268b3]/90 text-white"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+        title="Excluir Usuário"
+        description="Tem certeza que deseja excluir este usuário? O acesso dele será revogado imediatamente."
+      />
     </div>
   )
 }
