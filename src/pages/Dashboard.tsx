@@ -9,10 +9,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
+      // Mudamos 'head: true' para 'head: false' e adicionamos '.limit(0)'
+      // Isso evita o erro de JSON vazio e continua sendo super rápido.
       const [cRes, uRes, wRes] = await Promise.all([
-        supabase.from('clientes').select('*', { count: 'exact', head: true }),
-        supabase.from('usuarios_cliente').select('*', { count: 'exact', head: true }),
-        supabase.from('widgets').select('*', { count: 'exact', head: true }),
+        supabase.from('clientes').select('*', { count: 'exact', head: false }).limit(0),
+        supabase.from('usuarios_cliente').select('*', { count: 'exact', head: false }).limit(0),
+        supabase.from('widgets').select('*', { count: 'exact', head: false }).limit(0),
       ])
 
       setStats({
