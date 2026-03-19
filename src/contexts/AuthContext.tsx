@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
 type UserRole = 'admin' | 'cliente' | null
+type AuthResultRole = UserRole | 'unconfirmed'
 
 interface AuthContextType {
   user: User | null
@@ -24,7 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true)
   const [customerData, setCustomerData] = useState<any>(null)
 
-  const loadRoleAndData = async (currentUser: User | null) => {
+  const loadRoleAndData = async (currentUser: User | null): Promise<AuthResultRole> => {
     if (!currentUser) {
       setRole(null)
       setCustomerData(null)
@@ -44,6 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select('*, clientes(*)')
       .eq('email', currentUser.email)
       .single()
+
+    if (data && data.email_confirmado === false) {
+      setRole(null)
+      setCustomerData(null)
+      return 'unconfirmed'
+    }
 
     if (isClienteMetadata || (data && data.ativo)) {
       setRole('cliente')
@@ -87,8 +94,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true
     if (user) {
-      loadRoleAndData(user).then(() => {
-        if (isMounted) setLoading(false)
+      loadRoleAndData(user).then((r) => {
+        if (r === 'unconfirmed') {
+          supabase.auth.signOut().then(() => {
+            if (isMounted) setLoading(false)
+          })
+        } else {
+          if (isMounted) setLoading(false)
+        }
       })
     } else {
       setRole(null)
@@ -103,8 +116,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { error, role: null }
+
     const r = await loadRoleAndData(data.user)
-    return { error: null, role: r }
+
+    if (r === 'unconfirmed') {
+      await supabase.auth.signOut()
+      return { error: new Error('UNCONFIRMED_EMAIL'), role: null }
+    }
+
+    return { error: null, role: r as UserRole }
   }
 
   const signOut = async () => {

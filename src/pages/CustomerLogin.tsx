@@ -42,10 +42,20 @@ export default function CustomerLogin() {
 
     if (error || userRole !== 'cliente') {
       setHasError(true)
-      toast({
-        variant: 'destructive',
-        title: 'Credenciais inválidas',
-      })
+
+      if (error && error.message === 'UNCONFIRMED_EMAIL') {
+        toast({
+          variant: 'destructive',
+          title: 'Acesso negado',
+          description: 'Por favor, confirme seu e-mail antes de acessar a plataforma.',
+        })
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Credenciais inválidas',
+        })
+      }
+
       if (!error && userRole !== 'cliente') {
         await signOut()
       }

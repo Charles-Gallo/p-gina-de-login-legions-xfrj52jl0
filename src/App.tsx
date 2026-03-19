@@ -12,6 +12,7 @@ import CustomerLogin from './pages/CustomerLogin'
 import CustomerDashboard from './pages/CustomerDashboard'
 import RecoverPassword from './pages/RecoverPassword'
 import ResetPassword from './pages/ResetPassword'
+import ConfirmEmail from './pages/ConfirmEmail'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/entrar" element={<CustomerLogin />} />
           <Route path="/recuperar-senha" element={<RecoverPassword />} />
           <Route path="/redefinir-senha" element={<ResetPassword />} />
+          <Route path="/confirmar-email" element={<ConfirmEmail />} />
           <Route path="/dashlgn" element={<CustomerDashboard />} />
 
           <Route element={<AdminLayout />}>

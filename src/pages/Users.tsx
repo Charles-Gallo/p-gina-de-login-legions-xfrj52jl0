@@ -79,15 +79,41 @@ export default function Users() {
     setIsSaving(true)
     const { id, ...payload } = modal.data
 
-    const { error } = id
-      ? await supabase.from('usuarios_cliente').update(payload).eq('id', id)
-      : await supabase.from('usuarios_cliente').insert(payload)
+    let error = null
+    let newRecord = null
+
+    if (id) {
+      const { error: updateError } = await supabase
+        .from('usuarios_cliente')
+        .update(payload)
+        .eq('id', id)
+      error = updateError
+    } else {
+      const { data, error: insertError } = await supabase
+        .from('usuarios_cliente')
+        .insert(payload)
+        .select()
+        .single()
+      error = insertError
+      newRecord = data
+    }
 
     setIsSaving(false)
     if (error) {
       toast({ variant: 'destructive', title: 'Erro ao salvar usuário', description: error.message })
       return
     }
+
+    if (newRecord && (newRecord as any).token_confirmacao) {
+      const origin = window.location.origin
+      supabase.functions.invoke('send-confirmation-email', {
+        body: {
+          email: newRecord.email,
+          confirmationUrl: `${origin}/confirmar-email?token=${(newRecord as any).token_confirmacao}`,
+        },
+      })
+    }
+
     toast({ title: `Usuário ${id ? 'atualizado' : 'criado'} com sucesso` })
     setModal({ open: false, mode: 'create', data: initialData })
     fetchData()
@@ -168,6 +194,9 @@ export default function Users() {
               <TableHead className="font-semibold text-slate-900">Nome</TableHead>
               <TableHead className="font-semibold text-slate-900">Email</TableHead>
               <TableHead className="font-semibold text-slate-900">Cliente</TableHead>
+              <TableHead className="font-semibold text-slate-900 text-center">
+                Confirmação
+              </TableHead>
               <TableHead className="font-semibold text-slate-900">Status</TableHead>
               <TableHead className="text-right font-semibold text-slate-900">Ações</TableHead>
             </TableRow>
@@ -175,13 +204,13 @@ export default function Users() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <Loader2 className="h-6 w-6 animate-spin text-[#1268b3] mx-auto" />
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>
@@ -191,6 +220,18 @@ export default function Users() {
                   <TableCell className="font-medium text-slate-900">{user.nome_usuario}</TableCell>
                   <TableCell className="text-slate-600">{user.email}</TableCell>
                   <TableCell className="text-slate-600">{user.clientes?.nome}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge
+                      variant="outline"
+                      className={
+                        user.email_confirmado
+                          ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-50'
+                          : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50'
+                      }
+                    >
+                      {user.email_confirmado ? 'Confirmado' : 'Pendente'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
