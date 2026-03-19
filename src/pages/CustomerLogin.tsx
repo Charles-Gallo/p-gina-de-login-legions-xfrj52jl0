@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
@@ -106,6 +106,12 @@ export default function CustomerLogin() {
                 >
                   Senha
                 </Label>
+                <Link
+                  to="/recuperar-senha"
+                  className="text-xs text-[#1268b3] hover:underline font-medium transition-colors"
+                >
+                  Esqueci minha senha
+                </Link>
               </div>
               <div className="relative">
                 <Input

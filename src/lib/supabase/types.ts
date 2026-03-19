@@ -292,7 +292,16 @@ export const Constants = {
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: clientes
-//   Policy "admin_all_clientes" (ALL, PERMISSIVE) roles={authenticated}
+//   Policy "admin_delete_clientes" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "admin_full_access_clientes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//     WITH CHECK: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "admin_insert_clientes" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "admin_select_clientes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "admin_update_clientes" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
 //     WITH CHECK: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
 //   Policy "cliente_select_clientes" (SELECT, PERMISSIVE) roles={authenticated}
