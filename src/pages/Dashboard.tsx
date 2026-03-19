@@ -1,19 +1,24 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, FileText, Activity, LogOut, LayoutDashboard } from 'lucide-react'
+import { Users, LayoutDashboard, Box, UserCog, LogOut } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Logo } from '@/components/Logo'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+} from '@/components/ui/sidebar'
 
 export default function Dashboard() {
   const { isAuthenticated, logout } = useAuth()
@@ -32,137 +37,143 @@ export default function Dashboard() {
 
   if (!isAuthenticated) return null
 
+  const menuItems = [
+    { title: 'Dashboard', icon: LayoutDashboard, isActive: true },
+    { title: 'Clientes', icon: Users, isActive: false },
+    { title: 'Usuários', icon: UserCog, isActive: false },
+    { title: 'Widgets', icon: Box, isActive: false },
+  ]
+
   const stats = [
     {
-      title: 'Usuários Ativos',
-      value: '2.543',
+      title: 'Total de Clientes',
+      value: '1.284',
       icon: Users,
-      description: '+12% desde o último mês',
-      color: 'text-blue-500',
+      color: 'text-[#1268b3]',
     },
     {
-      title: 'Relatórios Pendentes',
-      value: '14',
-      icon: FileText,
-      description: '4 requerem atenção urgente',
-      color: 'text-red-500',
+      title: 'Total de Usuários',
+      value: '45',
+      icon: UserCog,
+      color: 'text-[#1268b3]',
     },
     {
-      title: 'Logs do Sistema',
-      value: '8.192',
-      icon: Activity,
-      description: 'Sistema operando normalmente',
-      color: 'text-green-500',
+      title: 'Total de Widgets',
+      value: '328',
+      icon: Box,
+      color: 'text-[#ed1b32]',
     },
   ]
 
   return (
-    <div className="w-full h-full flex flex-col absolute inset-0 bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Logo className="scale-75 origin-left" />
-        </div>
-
-        <div className="ml-auto flex items-center space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9 border border-slate-200">
-                  <AvatarImage
-                    src="https://img.usecurling.com/ppl/thumbnail?gender=male&seed=admin"
-                    alt="Admin"
-                  />
-                  <AvatarFallback className="bg-primary/10 text-primary">AD</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Administrador</p>
-                  <p className="text-xs leading-none text-muted-foreground">admin@legions.com</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Painel de Controle</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-destructive focus:text-destructive cursor-pointer"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-        <div className="mx-auto max-w-6xl space-y-8 animate-slide-up">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              Bem-vindo, Administrador
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Aqui está o resumo das atividades do sistema Legions hoje.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {stats.map((stat, i) => {
-              const Icon = stat.icon
-              return (
-                <Card
-                  key={i}
-                  className="border-slate-200 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                    <CardTitle className="text-sm font-medium text-slate-600">
-                      {stat.title}
-                    </CardTitle>
-                    <Icon className={`h-4 w-4 ${stat.color}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-slate-900">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-
-          {/* Placeholder for additional content to make the dashboard look complete */}
-          <div className="mt-8">
-            <Card className="border-slate-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Atividades Recentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-4 py-3 border-b last:border-0 last:pb-0"
+    <SidebarProvider className="absolute inset-0 z-50 bg-slate-50">
+      <Sidebar className="border-r border-slate-200" collapsible="icon">
+        <SidebarContent className="pt-4">
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-2">
+              Menu de Navegação
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      isActive={item.isActive}
+                      tooltip={item.title}
+                      className={
+                        item.isActive
+                          ? 'bg-[#1268b3]/10 text-[#1268b3] hover:bg-[#1268b3]/20 hover:text-[#1268b3]'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }
                     >
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">Novo usuário registrado na plataforma</p>
-                        <p className="text-xs text-muted-foreground">Há {i * 15} minutos</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                      <item.icon />
+                      <span className="font-medium">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter className="border-t border-slate-200 p-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleLogout}
+                tooltip="Sair do Sistema"
+                className="text-[#ed1b32] hover:text-[#ed1b32] hover:bg-[#ed1b32]/10 transition-colors"
+              >
+                <LogOut />
+                <span className="font-medium">Logout</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset className="bg-slate-50 flex flex-col min-h-screen w-full">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-white px-4 shadow-sm md:px-6">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="-ml-1 text-slate-500 hover:text-slate-900 transition-colors" />
+            <div className="h-6 w-px bg-slate-200 mx-2 hidden md:block" />
+            <Logo className="scale-75 origin-left" />
           </div>
-        </div>
-      </main>
-    </div>
+          <div className="flex items-center space-x-4">
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-sm font-semibold text-slate-900 leading-none">
+                Administrador
+              </span>
+              <span className="text-xs text-muted-foreground mt-1">admin@legions.com</span>
+            </div>
+            <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
+              <AvatarImage
+                src="https://img.usecurling.com/ppl/thumbnail?gender=male&seed=admin"
+                alt="Administrador"
+              />
+              <AvatarFallback className="bg-[#1268b3]/10 text-[#1268b3] font-semibold">
+                AD
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+          <div className="mx-auto max-w-6xl space-y-8 animate-slide-up">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+              <p className="text-muted-foreground mt-1 text-sm md:text-base">
+                Visão geral do sistema e indicadores de desempenho.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {stats.map((stat, i) => {
+                const Icon = stat.icon
+                return (
+                  <Card
+                    key={i}
+                    className="border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                      <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+                        {stat.title}
+                      </CardTitle>
+                      <div className={`p-2 rounded-md bg-slate-50/50 ${stat.color}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-bold text-slate-900 tracking-tight">
+                        {stat.value}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
