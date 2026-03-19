@@ -21,17 +21,47 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const initialClients = [
-  { id: 1, name: 'Empresa Alpha', email: 'contato@alpha.com', status: 'Ativo' },
-  { id: 2, name: 'Tech Solutions', email: 'hello@techsolutions.com', status: 'Ativo' },
-  { id: 3, name: 'Comércio Beta', email: 'admin@beta.com.br', status: 'Inativo' },
+  {
+    id: 1,
+    name: 'Empresa Alpha',
+    email: 'contato@alpha.com',
+    status: 'Ativo',
+    createdAt: '2026-03-15',
+  },
+  {
+    id: 2,
+    name: 'Tech Solutions',
+    email: 'hello@techsolutions.com',
+    status: 'Ativo',
+    createdAt: '2026-02-10',
+  },
+  {
+    id: 3,
+    name: 'Comércio Beta',
+    email: 'admin@beta.com.br',
+    status: 'Inativo',
+    createdAt: '2026-01-05',
+  },
 ]
 
 export default function Clients() {
   const [clients, setClients] = useState(initialClients)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [newClient, setNewClient] = useState({ name: '', email: '', settings: '' })
+  const [newClient, setNewClient] = useState({
+    name: '',
+    email: '',
+    status: 'Ativo',
+    createdAt: '',
+  })
 
   const handleCreateClient = (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,15 +69,22 @@ export default function Clients() {
       id: clients.length + 1,
       name: newClient.name,
       email: newClient.email,
-      status: 'Ativo',
+      status: newClient.status,
+      createdAt: newClient.createdAt || new Date().toISOString().split('T')[0],
     }
     setClients([...clients, client])
-    setNewClient({ name: '', email: '', settings: '' })
+    setNewClient({ name: '', email: '', status: 'Ativo', createdAt: '' })
     setIsModalOpen(false)
   }
 
   const handleDelete = (id: number) => {
     setClients(clients.filter((c) => c.id !== id))
+  }
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-'
+    const [year, month, day] = dateStr.split('-')
+    return `${day}/${month}/${year}`
   }
 
   return (
@@ -86,7 +123,7 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
@@ -97,12 +134,27 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="settings">Configurações</Label>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={newClient.status}
+                  onValueChange={(val) => setNewClient({ ...newClient, status: val })}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ativo">Ativo</SelectItem>
+                    <SelectItem value="Inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="createdAt">Data de Cadastro</Label>
                 <Input
-                  id="settings"
-                  value={newClient.settings}
-                  onChange={(e) => setNewClient({ ...newClient, settings: e.target.value })}
-                  placeholder="Configurações em JSON ou texto"
+                  id="createdAt"
+                  type="date"
+                  value={newClient.createdAt}
+                  onChange={(e) => setNewClient({ ...newClient, createdAt: e.target.value })}
                   required
                 />
               </div>
@@ -121,8 +173,9 @@ export default function Clients() {
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
               <TableHead className="font-semibold text-slate-900">Nome</TableHead>
-              <TableHead className="font-semibold text-slate-900">Email</TableHead>
+              <TableHead className="font-semibold text-slate-900">E-mail</TableHead>
               <TableHead className="font-semibold text-slate-900">Status</TableHead>
+              <TableHead className="font-semibold text-slate-900">Data de Cadastro</TableHead>
               <TableHead className="text-right font-semibold text-slate-900">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -143,6 +196,7 @@ export default function Clients() {
                     {client.status}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-slate-600">{formatDate(client.createdAt)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
@@ -168,7 +222,7 @@ export default function Clients() {
             ))}
             {clients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                   Nenhum cliente encontrado.
                 </TableCell>
               </TableRow>
