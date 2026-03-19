@@ -91,30 +91,55 @@ export default function Users() {
     } else {
       const { data, error: insertError } = await supabase
         .from('usuarios_cliente')
-        .insert(payload)
+        .insert({
+          ...payload,
+          email_confirmado: true,
+          token_confirmacao: null,
+        })
         .select()
         .single()
       error = insertError
       newRecord = data
     }
 
-    setIsSaving(false)
     if (error) {
+      setIsSaving(false)
       toast({ variant: 'destructive', title: 'Erro ao salvar usuário', description: error.message })
       return
     }
 
-    if (newRecord && (newRecord as any).token_confirmacao) {
+    if (!id && newRecord) {
+      const senhaTemporaria = Math.random().toString(36).slice(-8)
       const origin = window.location.origin
-      supabase.functions.invoke('send-confirmation-email', {
+
+      const { error: invokeError } = await supabase.functions.invoke('send-welcome-email', {
         body: {
           email: newRecord.email,
-          confirmationUrl: `${origin}/confirmar-email?token=${(newRecord as any).token_confirmacao}`,
+          senha_temporaria: senhaTemporaria,
+          resetUrl: `${origin}/redefinir-senha`,
         },
       })
+
+      setIsSaving(false)
+
+      if (invokeError) {
+        toast({
+          variant: 'destructive',
+          title: 'Aviso',
+          description:
+            'Usuário criado, mas houve um erro ao enviar o e-mail de boas-vindas. Por favor, verifique as configurações do Resend.',
+        })
+      } else {
+        toast({
+          title: 'Sucesso',
+          description: 'Usuário criado e e-mail de boas-vindas enviado com sucesso.',
+        })
+      }
+    } else {
+      setIsSaving(false)
+      toast({ title: 'Usuário atualizado com sucesso' })
     }
 
-    toast({ title: `Usuário ${id ? 'atualizado' : 'criado'} com sucesso` })
     setModal({ open: false, mode: 'create', data: initialData })
     fetchData()
   }

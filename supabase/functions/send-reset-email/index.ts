@@ -13,10 +13,10 @@ Deno.serve(async (req) => {
 
   try {
     const { email, redirectTo } = await req.json()
-    
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Generate recovery link using admin API
@@ -24,15 +24,15 @@ Deno.serve(async (req) => {
       type: 'recovery',
       email,
       options: {
-        redirectTo
-      }
+        redirectTo,
+      },
     })
 
     if (error) {
-       // Return success anyway to prevent email enumeration
-       return new Response(JSON.stringify({ message: "Request processed" }), {
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-       })
+      // Return success anyway to prevent email enumeration
+      return new Response(JSON.stringify({ message: 'Request processed' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const actionLink = data.properties.action_link
@@ -41,8 +41,8 @@ Deno.serve(async (req) => {
 
     if (!resendApiKey) {
       console.log('No EMAIL_SERVICE_API_KEY set. Simulated action_link:', actionLink)
-      return new Response(JSON.stringify({ message: "Simulated email send" }), {
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ message: 'Simulated email send' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -50,8 +50,8 @@ Deno.serve(async (req) => {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
             </div>
             <p style="font-size: 14px; color: #666;">Se você não solicitou a redefinição, por favor ignore este e-mail.</p>
           </div>
-        `
-      })
+        `,
+      }),
     })
 
     if (!res.ok) {
@@ -78,14 +78,13 @@ Deno.serve(async (req) => {
       throw new Error(`Resend API error: ${resError}`)
     }
 
-    return new Response(JSON.stringify({ message: "Email sent" }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ message: 'Email sent' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
