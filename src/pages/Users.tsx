@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Plus, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, ShieldAlert, ShieldCheck, Loader2, Trash2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -29,68 +31,78 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const mockClients = [
-  { id: '1', name: 'Empresa Alpha' },
-  { id: '2', name: 'Tech Solutions' },
-  { id: '3', name: 'Comércio Beta' },
-]
-
-const initialUsers = [
-  { id: 1, name: 'Ana Costa', email: 'ana@alpha.com', clientId: '1', status: 'Ativo' },
-  {
-    id: 2,
-    name: 'Carlos Santos',
-    email: 'carlos@techsolutions.com',
-    clientId: '2',
-    status: 'Ativo',
-  },
-  { id: 3, name: 'Maria Oliveira', email: 'maria@beta.com.br', clientId: '3', status: 'Inativo' },
-  { id: 4, name: 'João Silva', email: 'joao@alpha.com', clientId: '1', status: 'Ativo' },
-  {
-    id: 5,
-    name: 'Pedro Alves',
-    email: 'pedro@techsolutions.com',
-    clientId: '2',
-    status: 'Inativo',
-  },
-]
-
 export default function Users() {
-  const [users, setUsers] = useState(initialUsers)
+  const [users, setUsers] = useState<any[]>([])
+  const [clients, setClients] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [clientFilter, setClientFilter] = useState<string>('all')
   const [newUser, setNewUser] = useState({ name: '', email: '', clientId: '' })
+  const { toast } = useToast()
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newUser.clientId) return
+  useEffect(() => {
+    fetchData()
+  }, [])
 
-    const user = {
-      id: users.length + 1,
-      name: newUser.name,
-      email: newUser.email,
-      clientId: newUser.clientId,
-      status: 'Ativo',
-    }
-    setUsers([...users, user])
-    setNewUser({ name: '', email: '', clientId: '' })
-    setIsModalOpen(false)
+  const fetchData = async () => {
+    setIsLoading(true)
+    const [usersRes, clientsRes] = await Promise.all([
+      supabase
+        .from('usuarios_cliente')
+        .select('*, clientes(nome)')
+        .order('created_at', { ascending: false }),
+      supabase.from('clientes').select('id, nome').eq('ativo', true),
+    ])
+    if (usersRes.data) setUsers(usersRes.data)
+    if (clientsRes.data) setClients(clientsRes.data)
+    setIsLoading(false)
   }
 
-  const toggleStatus = (id: number) => {
-    setUsers(
-      users.map((u) =>
-        u.id === id ? { ...u, status: u.status === 'Ativo' ? 'Inativo' : 'Ativo' } : u,
-      ),
-    )
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newUser.clientId) return
+    setIsSaving(true)
+
+    const { error } = await supabase.from('usuarios_cliente').insert({
+      nome_usuario: newUser.name,
+      email: newUser.email,
+      cliente_id: newUser.clientId,
+      ativo: true,
+    })
+
+    setIsSaving(false)
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao cadastrar usuário' })
+      return
+    }
+
+    toast({ title: 'Usuário cadastrado com sucesso' })
+    setNewUser({ name: '', email: '', clientId: '' })
+    setIsModalOpen(false)
+    fetchData()
+  }
+
+  const toggleStatus = async (user: any) => {
+    const { error } = await supabase
+      .from('usuarios_cliente')
+      .update({ ativo: !user.ativo })
+      .eq('id', user.id)
+    if (!error) fetchData()
+  }
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('usuarios_cliente').delete().eq('id', id)
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao remover usuário' })
+      return
+    }
+    toast({ title: 'Usuário removido' })
+    fetchData()
   }
 
   const filteredUsers =
-    clientFilter === 'all' ? users : users.filter((u) => u.clientId === clientFilter)
-
-  const getClientName = (clientId: string) => {
-    return mockClients.find((c) => c.id === clientId)?.name || 'Desconhecido'
-  }
+    clientFilter === 'all' ? users : users.filter((u) => u.cliente_id === clientFilter)
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 animate-slide-up">
@@ -149,9 +161,9 @@ export default function Users() {
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockClients.map((client) => (
+                    {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
-                        {client.name}
+                        {client.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -161,8 +173,12 @@ export default function Users() {
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-[#1268b3] hover:bg-[#1268b3]/90 text-white">
-                  Salvar
+                <Button
+                  disabled={isSaving}
+                  type="submit"
+                  className="bg-[#1268b3] hover:bg-[#1268b3]/90 text-white"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
                 </Button>
               </DialogFooter>
             </form>
@@ -183,9 +199,9 @@ export default function Users() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Clientes</SelectItem>
-            {mockClients.map((client) => (
+            {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
-                {client.name}
+                {client.nome}
               </SelectItem>
             ))}
           </SelectContent>
@@ -204,55 +220,73 @@ export default function Users() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                <TableCell className="font-medium text-slate-900">{user.name}</TableCell>
-                <TableCell className="text-slate-600">{user.email}</TableCell>
-                <TableCell className="text-slate-600">{getClientName(user.clientId)}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={
-                      user.status === 'Ativo'
-                        ? 'bg-[#1268b3]/10 text-[#1268b3] border-[#1268b3]/20'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }
-                  >
-                    {user.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleStatus(user.id)}
-                    className={
-                      user.status === 'Ativo'
-                        ? 'text-[#ed1b32] hover:text-[#ed1b32] hover:bg-[#ed1b32]/10 h-8'
-                        : 'text-[#1268b3] hover:text-[#1268b3] hover:bg-[#1268b3]/10 h-8'
-                    }
-                  >
-                    {user.status === 'Ativo' ? (
-                      <>
-                        <ShieldAlert className="mr-2 h-3.5 w-3.5" />
-                        Suspender
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="mr-2 h-3.5 w-3.5" />
-                        Ativar
-                      </>
-                    )}
-                  </Button>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#1268b3] mx-auto" />
                 </TableCell>
               </TableRow>
-            ))}
-            {filteredUsers.length === 0 && (
+            ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  Nenhum usuário encontrado para este filtro.
+                  Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>
+            ) : (
+              filteredUsers.map((user) => (
+                <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                  <TableCell className="font-medium text-slate-900">{user.nome_usuario}</TableCell>
+                  <TableCell className="text-slate-600">{user.email}</TableCell>
+                  <TableCell className="text-slate-600">{user.clientes?.nome}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={
+                        user.ativo
+                          ? 'bg-[#1268b3]/10 text-[#1268b3] border-[#1268b3]/20'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }
+                    >
+                      {user.ativo ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleStatus(user)}
+                        className={
+                          user.ativo
+                            ? 'text-[#ed1b32] hover:text-[#ed1b32] hover:bg-[#ed1b32]/10 h-8'
+                            : 'text-[#1268b3] hover:text-[#1268b3] hover:bg-[#1268b3]/10 h-8'
+                        }
+                      >
+                        {user.ativo ? (
+                          <>
+                            <ShieldAlert className="mr-2 h-3.5 w-3.5" />
+                            Suspender
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck className="mr-2 h-3.5 w-3.5" />
+                            Ativar
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(user.id)}
+                        className="h-8 text-[#ed1b32] hover:text-[#ed1b32] hover:bg-[#ed1b32]/10"
+                      >
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                        Deletar
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

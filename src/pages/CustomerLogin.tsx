@@ -17,55 +17,46 @@ export default function CustomerLogin() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
 
-  const { login, role } = useAuth()
+  const { signIn, role, signOut, loading } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
 
   useEffect(() => {
-    if (role === 'customer') {
+    if (!loading && role === 'customer') {
       navigate('/dashlgn', { replace: true })
     }
-  }, [role, navigate])
+  }, [role, loading, navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setHasError(false)
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!email || !password || !emailRegex.test(email)) {
+    if (!email || !password) {
       setHasError(true)
-      toast({
-        variant: 'destructive',
-        title: 'Credenciais inválidas',
-        description: 'Por favor, verifique seus dados e tente novamente.',
-      })
       return
     }
 
     setIsLoading(true)
+    const { error, role: userRole } = await signIn(email, password)
+    setIsLoading(false)
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-
-      // Mock validation success if password is at least 3 chars
-      if (password.length >= 3) {
-        login('customer')
-        toast({
-          title: 'Login realizado com sucesso',
-          description: 'Bem-vindo ao seu portal de cliente.',
-        })
-        navigate('/dashlgn')
-      } else {
-        setHasError(true)
-        toast({
-          variant: 'destructive',
-          title: 'Credenciais inválidas',
-          description: 'A senha incorreta. Tente novamente.',
-        })
+    if (error || userRole !== 'customer') {
+      setHasError(true)
+      toast({
+        variant: 'destructive',
+        title: 'Credenciais inválidas',
+        description: 'Por favor, verifique seus dados.',
+      })
+      if (userRole === 'admin') {
+        await signOut()
       }
-    }, 1200)
+    } else {
+      toast({
+        title: 'Login realizado com sucesso',
+        description: 'Bem-vindo ao seu portal de cliente.',
+      })
+      navigate('/dashlgn')
+    }
   }
 
   return (

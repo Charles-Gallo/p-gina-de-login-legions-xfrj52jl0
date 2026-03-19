@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom'
-import { Users, LayoutDashboard, Box, UserCog, LogOut } from 'lucide-react'
+import { Users, LayoutDashboard, Box, UserCog, LogOut, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Logo } from '@/components/Logo'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -20,22 +20,28 @@ import {
 } from '@/components/ui/sidebar'
 
 export default function AdminLayout() {
-  const { isAuthenticated, role, logout } = useAuth()
+  const { isAuthenticated, role, signOut, loading, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    if (!isAuthenticated || role !== 'admin') {
+    if (!loading && (!isAuthenticated || role !== 'admin')) {
       navigate('/adm/login', { replace: true })
     }
-  }, [isAuthenticated, role, navigate])
+  }, [loading, isAuthenticated, role, navigate])
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await signOut()
     navigate('/adm/login')
   }
 
-  if (!isAuthenticated || role !== 'admin') return null
+  if (loading || !isAuthenticated || role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1268b3]" />
+      </div>
+    )
+  }
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/admlgn' },
@@ -108,7 +114,9 @@ export default function AdminLayout() {
               <span className="text-sm font-semibold text-slate-900 leading-none">
                 Administrador
               </span>
-              <span className="text-xs text-muted-foreground mt-1">admin@legions.com</span>
+              <span className="text-xs text-muted-foreground mt-1">
+                {user?.email || 'admin@legions.com'}
+              </span>
             </div>
             <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
               <AvatarImage
