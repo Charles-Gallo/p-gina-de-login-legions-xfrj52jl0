@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, ExternalLink, BarChart3, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/hooks/use-toast'
 import { Logo } from '@/components/Logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +13,7 @@ export default function CustomerDashboard() {
   const [widgets, setWidgets] = useState<any[]>([])
   const [isLoadingWidgets, setIsLoadingWidgets] = useState(true)
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || role !== 'cliente')) {
@@ -20,6 +22,8 @@ export default function CustomerDashboard() {
   }, [loading, isAuthenticated, role, navigate])
 
   useEffect(() => {
+    let isMounted = true
+
     if (customerData?.cliente_id) {
       setIsLoadingWidgets(true)
       supabase
@@ -28,12 +32,40 @@ export default function CustomerDashboard() {
         .eq('cliente_id', customerData.cliente_id)
         .eq('ativo', true)
         .order('ordem', { ascending: true })
-        .then(({ data }) => {
-          setWidgets(data || [])
+        .then(({ data, error }) => {
+          if (!isMounted) return
+
+          if (error) {
+            toast({
+              variant: 'destructive',
+              title: 'Erro ao carregar relatórios',
+              description: 'Ocorreu um problema ao buscar os dados do seu dashboard.',
+            })
+            setWidgets([])
+          } else {
+            setWidgets(data || [])
+          }
           setIsLoadingWidgets(false)
         })
+    } else if (customerData && !customerData.cliente_id) {
+      if (isMounted) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro de configuração',
+          description: 'Não foi possível encontrar o cliente associado à sua conta.',
+        })
+        setIsLoadingWidgets(false)
+      }
+    } else {
+      if (isMounted) {
+        setIsLoadingWidgets(false)
+      }
     }
-  }, [customerData])
+
+    return () => {
+      isMounted = false
+    }
+  }, [customerData, toast])
 
   const handleLogout = async () => {
     await signOut()
@@ -42,7 +74,7 @@ export default function CustomerDashboard() {
 
   if (loading || !isAuthenticated || role !== 'cliente') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 w-full h-full absolute inset-0">
         <Loader2 className="h-8 w-8 animate-spin text-[#1268b3]" />
       </div>
     )
@@ -90,11 +122,11 @@ export default function CustomerDashboard() {
 
           <div className="flex flex-col gap-4 w-full">
             {isLoadingWidgets ? (
-              <div className="flex justify-center p-12 bg-white rounded-lg border border-slate-200">
+              <div className="flex justify-center p-12 bg-white rounded-lg border border-slate-200 shadow-sm">
                 <Loader2 className="h-8 w-8 animate-spin text-[#1268b3]" />
               </div>
             ) : widgets.length === 0 ? (
-              <div className="text-center p-12 bg-white rounded-lg border border-dashed border-slate-300">
+              <div className="text-center p-12 bg-white rounded-lg border border-dashed border-slate-300 shadow-sm">
                 <p className="text-slate-500">Nenhum relatório disponível no momento.</p>
               </div>
             ) : (
