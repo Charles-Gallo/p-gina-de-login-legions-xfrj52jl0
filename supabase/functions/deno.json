@@ -1,6 +1,6 @@
 {
   "_versions": {
-    "send-reset-email": 2,
-    "send-confirmation-email": 1
+    "send-reset-email": 3,
+    "send-confirmation-email": 2
   }
 }
