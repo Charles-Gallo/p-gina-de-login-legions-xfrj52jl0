@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Clients from './pages/Clients'
 import Users from './pages/Users'
+import Widgets from './pages/Widgets'
 import CustomerLogin from './pages/CustomerLogin'
 import CustomerDashboard from './pages/CustomerDashboard'
 import NotFound from './pages/NotFound'
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/admlgn" element={<Dashboard />} />
             <Route path="/admlgn/clientes" element={<Clients />} />
             <Route path="/admlgn/usuarios" element={<Users />} />
+            <Route path="/admlgn/widgets" element={<Widgets />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFound />} />
