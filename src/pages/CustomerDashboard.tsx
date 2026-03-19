@@ -25,21 +25,21 @@ const mockWidgets = [
 ]
 
 export default function CustomerDashboard() {
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, role, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || role !== 'customer') {
       navigate('/entrar', { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, role, navigate])
 
   const handleLogout = () => {
     logout()
     navigate('/entrar')
   }
 
-  if (!isAuthenticated) return null
+  if (!isAuthenticated || role !== 'customer') return null
 
   return (
     <div className="w-full h-full flex flex-col absolute inset-0 bg-slate-50">

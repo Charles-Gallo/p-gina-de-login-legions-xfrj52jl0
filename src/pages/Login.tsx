@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -17,9 +17,15 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
 
-  const { login } = useAuth()
+  const { login, role } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (role === 'admin') {
+      navigate('/admlgn', { replace: true })
+    }
+  }, [role, navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +51,7 @@ export default function Login() {
 
       // Mock validation success if password is at least 3 chars
       if (password.length >= 3) {
-        login()
+        login('admin')
         toast({
           title: 'Login realizado com sucesso',
           description: 'Bem-vindo ao painel administrativo.',

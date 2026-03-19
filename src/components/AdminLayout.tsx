@@ -20,22 +20,22 @@ import {
 } from '@/components/ui/sidebar'
 
 export default function AdminLayout() {
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, role, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || role !== 'admin') {
       navigate('/adm/login', { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, role, navigate])
 
   const handleLogout = () => {
     logout()
     navigate('/adm/login')
   }
 
-  if (!isAuthenticated) return null
+  if (!isAuthenticated || role !== 'admin') return null
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/admlgn' },
