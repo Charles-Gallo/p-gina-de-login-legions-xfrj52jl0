@@ -292,17 +292,23 @@ export const Constants = {
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: clientes
-//   Policy "authenticated_all_clientes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
+//   Policy "admin_all_clientes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//     WITH CHECK: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "cliente_select_clientes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (id IN ( SELECT usuarios_cliente.cliente_id    FROM usuarios_cliente   WHERE (usuarios_cliente.email = (auth.jwt() ->> 'email'::text))))
 // Table: usuarios_cliente
-//   Policy "authenticated_all_usuarios" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
+//   Policy "admin_all_usuarios" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//     WITH CHECK: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "cliente_select_usuarios" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (email = (auth.jwt() ->> 'email'::text))
 // Table: widgets
-//   Policy "authenticated_all_widgets" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
+//   Policy "admin_all_widgets" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//     WITH CHECK: (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)
+//   Policy "cliente_select_widgets" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (cliente_id IN ( SELECT usuarios_cliente.cliente_id    FROM usuarios_cliente   WHERE (usuarios_cliente.email = (auth.jwt() ->> 'email'::text))))
 
 // --- INDEXES ---
 // Table: usuarios_cliente
