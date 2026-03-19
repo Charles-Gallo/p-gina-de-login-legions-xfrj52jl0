@@ -5,7 +5,7 @@ export default function Index() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    navigate('/adm/login', { replace: true })
+    navigate('/entrar', { replace: true })
   }, [navigate])
 
   return null
