@@ -1,12 +1,12 @@
-/* Home Page - Replace this page layout, components, content, behavior with what you want and translate to the language of the user */
-const Index = () => {
-  return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">
-        This is a example page ready to be rewritten with your own content
-      </h1>
-    </div>
-  )
-}
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-export default Index
+export default function Index() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    navigate('/adm/login', { replace: true })
+  }, [navigate])
+
+  return null
+}
