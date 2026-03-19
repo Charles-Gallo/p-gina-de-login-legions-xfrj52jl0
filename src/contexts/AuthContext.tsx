@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
-type UserRole = 'admin' | 'customer' | null
+type UserRole = 'admin' | 'cliente' | null
 
 interface AuthContextType {
   user: User | null
@@ -37,16 +37,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return 'admin'
     }
 
+    const isClienteMetadata = currentUser.user_metadata?.role === 'cliente'
+
     const { data } = await supabase
       .from('usuarios_cliente')
       .select('*, clientes(*)')
       .eq('email', currentUser.email)
       .single()
 
-    if (data && data.ativo) {
-      setRole('customer')
+    if (isClienteMetadata || (data && data.ativo)) {
+      setRole('cliente')
       setCustomerData(data)
-      return 'customer'
+      return 'cliente'
     }
 
     setRole(null)

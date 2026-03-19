@@ -14,7 +14,7 @@ export default function CustomerDashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || role !== 'customer')) {
+    if (!loading && (!isAuthenticated || role !== 'cliente')) {
       navigate('/entrar', { replace: true })
     }
   }, [loading, isAuthenticated, role, navigate])
@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
     navigate('/entrar')
   }
 
-  if (loading || !isAuthenticated || role !== 'customer') {
+  if (loading || !isAuthenticated || role !== 'cliente') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="h-8 w-8 animate-spin text-[#1268b3]" />

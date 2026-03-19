@@ -22,7 +22,7 @@ export default function CustomerLogin() {
   const { toast } = useToast()
 
   useEffect(() => {
-    if (!loading && role === 'customer') {
+    if (!loading && role === 'cliente') {
       navigate('/dashlgn', { replace: true })
     }
   }, [role, loading, navigate])
@@ -40,14 +40,13 @@ export default function CustomerLogin() {
     const { error, role: userRole } = await signIn(email, password)
     setIsLoading(false)
 
-    if (error || userRole !== 'customer') {
+    if (error || userRole !== 'cliente') {
       setHasError(true)
       toast({
         variant: 'destructive',
         title: 'Credenciais inválidas',
-        description: 'Por favor, verifique seus dados.',
       })
-      if (userRole === 'admin') {
+      if (!error && userRole !== 'cliente') {
         await signOut()
       }
     } else {
