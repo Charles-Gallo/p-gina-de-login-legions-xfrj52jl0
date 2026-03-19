@@ -40,16 +40,21 @@ export default function Login() {
     const { error, role: userRole } = await signIn(email, password)
     setIsLoading(false)
 
-    if (error || userRole !== 'admin') {
+    if (error) {
       setHasError(true)
       toast({
         variant: 'destructive',
         title: 'Credenciais inválidas',
         description: 'Verifique seus dados e tente novamente.',
       })
-      if (userRole === 'customer') {
-        await signOut()
-      }
+    } else if (userRole !== 'admin') {
+      setHasError(true)
+      await signOut()
+      toast({
+        variant: 'destructive',
+        title: 'Acesso negado',
+        description: 'Acesso restrito apenas para administradores',
+      })
     } else {
       toast({
         title: 'Login realizado com sucesso',
