@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
 
   try {
     const { email, senha_temporaria, resetUrl } = await req.json()
-    
+
     if (!email || !senha_temporaria) {
       throw new Error('E-mail e senha temporária são obrigatórios')
     }
@@ -29,23 +29,23 @@ Deno.serve(async (req) => {
       throw new Error(`Erro ao criar conta de autenticação: ${authError.message}`)
     }
 
-    const resendApiKey = Deno.env.get('EMAIL_SERVICE_API_KEY')
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const senderEmail = Deno.env.get('SENDER_EMAIL') || 'onboarding@resend.dev'
     const link = resetUrl || 'https://pagina-de-login-legions-13e4e.goskip.app/redefinir-senha'
 
     if (!resendApiKey) {
       console.log('Simulated welcome email send for:', email)
-      return new Response(JSON.stringify({ message: "Simulated welcome email send" }), {
-         status: 200,
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ message: 'Simulated welcome email send' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
@@ -59,16 +59,16 @@ Deno.serve(async (req) => {
               <p style="margin: 0 0 8px 0;"><strong>E-mail:</strong> ${email}</p>
               <p style="margin: 0;"><strong>Senha Temporária:</strong> ${senha_temporaria}</p>
             </div>
-            <p>Recomendamos fortemente que você altere sua senha no primeiro acesso para garantir a segurança da sua conta.</p>
+            <p>Você já pode acessar nossa plataforma usando os dados acima.</p>
             <div style="margin: 30px 0;">
               <a href="${link}" style="background-color: #1268b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                Acessar e Redefinir Senha
+                Acessar Plataforma
               </a>
             </div>
             <p style="font-size: 14px; color: #666;">Se você tiver alguma dúvida ou não esperava este e-mail, entre em contato com o suporte.</p>
           </div>
-        `
-      })
+        `,
+      }),
     })
 
     if (!res.ok) {
@@ -76,15 +76,14 @@ Deno.serve(async (req) => {
       throw new Error(`Resend API error: ${resError}`)
     }
 
-    return new Response(JSON.stringify({ message: "Welcome email sent successfully" }), {
+    return new Response(JSON.stringify({ message: 'Welcome email sent successfully' }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })

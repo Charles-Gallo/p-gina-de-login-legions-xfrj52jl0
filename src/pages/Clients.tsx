@@ -31,8 +31,14 @@ import {
 } from '@/components/ui/select'
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog'
 
-type ClientData = { id?: string; nome: string; email_contato: string; ativo: boolean }
-const initialData: ClientData = { nome: '', email_contato: '', ativo: true }
+type ClientData = {
+  id?: string
+  nome: string
+  email_contato: string
+  ativo: boolean
+  senha?: string
+}
+const initialData: ClientData = { nome: '', email_contato: '', ativo: true, senha: '' }
 
 export default function Clients() {
   const [clients, setClients] = useState<any[]>([])
@@ -64,20 +70,63 @@ export default function Clients() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
-    const { id, ...payload } = modal.data
+    const { id, senha, ...payload } = modal.data
 
-    const { error } = id
-      ? await supabase.from('clientes').update(payload).eq('id', id)
-      : await supabase.from('clientes').insert(payload)
+    try {
+      if (id) {
+        const { error } = await supabase.from('clientes').update(payload).eq('id', id)
+        if (error) throw error
+        toast({ title: 'Cliente atualizado com sucesso' })
+      } else {
+        const { data: newClient, error } = await supabase
+          .from('clientes')
+          .insert(payload)
+          .select()
+          .single()
+        if (error) throw error
 
-    setIsSaving(false)
-    if (error) {
+        // Cria o usuário principal do cliente
+        const { error: userError } = await supabase.from('usuarios_cliente').insert({
+          cliente_id: newClient.id,
+          nome_usuario: newClient.nome,
+          email: newClient.email_contato,
+          ativo: true,
+          email_confirmado: true,
+        })
+
+        if (userError) {
+          console.error('Erro ao criar usuário vinculado:', userError)
+        }
+
+        // Criar usuário no Auth e disparar e-mail de boas vindas
+        if (senha) {
+          const { error: fnError } = await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              email: newClient.email_contato,
+              senha_temporaria: senha,
+              resetUrl: `${window.location.origin}/entrar`,
+            },
+          })
+
+          if (fnError) {
+            console.error('Erro na function send-welcome-email:', fnError)
+            toast({
+              variant: 'destructive',
+              title: 'Atenção',
+              description: 'Cliente criado, mas ocorreu um erro ao enviar o e-mail de acesso.',
+            })
+          }
+        }
+
+        toast({ title: 'Cliente criado com sucesso' })
+      }
+      setModal({ open: false, mode: 'create', data: initialData })
+      fetchClients()
+    } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erro ao salvar cliente', description: error.message })
-      return
+    } finally {
+      setIsSaving(false)
     }
-    toast({ title: `Cliente ${id ? 'atualizado' : 'criado'} com sucesso` })
-    setModal({ open: false, mode: 'create', data: initialData })
-    fetchClients()
   }
 
   const handleDelete = async () => {
@@ -237,6 +286,22 @@ export default function Clients() {
                 required
               />
             </div>
+            {modal.mode === 'create' && (
+              <div className="space-y-2">
+                <Label htmlFor="senha">Senha Inicial</Label>
+                <Input
+                  id="senha"
+                  type="text"
+                  value={modal.data.senha}
+                  onChange={(e) =>
+                    setModal((m) => ({ ...m, data: { ...m.data, senha: e.target.value } }))
+                  }
+                  required={modal.mode === 'create'}
+                  minLength={6}
+                  placeholder="Ex: senhaSegura123"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select

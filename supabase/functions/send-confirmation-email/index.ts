@@ -8,21 +8,21 @@ Deno.serve(async (req) => {
 
   try {
     const { email, confirmationUrl } = await req.json()
-    const resendApiKey = Deno.env.get('EMAIL_SERVICE_API_KEY')
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const senderEmail = Deno.env.get('SENDER_EMAIL') || 'onboarding@resend.dev'
 
     if (!resendApiKey) {
       console.log('Simulated confirmation email send. URL:', confirmationUrl)
-      return new Response(JSON.stringify({ message: "Simulated email send" }), {
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ message: 'Simulated email send' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
             </div>
             <p style="font-size: 14px; color: #666;">Se você não solicitou esta conta, por favor ignore este e-mail.</p>
           </div>
-        `
-      })
+        `,
+      }),
     })
 
     if (!res.ok) {
@@ -48,14 +48,13 @@ Deno.serve(async (req) => {
       throw new Error(`Resend API error: ${resError}`)
     }
 
-    return new Response(JSON.stringify({ message: "Email sent" }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ message: 'Email sent' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
