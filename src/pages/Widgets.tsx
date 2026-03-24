@@ -47,6 +47,7 @@ type WidgetData = {
   ordem: number
   ativo: boolean
 }
+
 const initialData: WidgetData = {
   nome_relatorio: '',
   url_looker: '',
@@ -89,7 +90,9 @@ export default function Widgets() {
     e.preventDefault()
     if (!modal.data.cliente_id) return
     setIsSaving(true)
-    const { id, ...payload } = modal.data
+
+    // Removemos os campos de relacionamento ou meta-dados que não devem ir no payload
+    const { id, clientes, created_at, ...payload } = modal.data as any
 
     if (!id && payload.ordem === 0) {
       const cWidgets = widgets.filter((w) => w.cliente_id === payload.cliente_id)
