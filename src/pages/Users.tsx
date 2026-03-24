@@ -37,8 +37,15 @@ type UserData = {
   email: string
   cliente_id: string
   ativo: boolean
+  senha?: string
 }
-const initialData: UserData = { nome_usuario: '', email: '', cliente_id: '', ativo: true }
+const initialData: UserData = {
+  nome_usuario: '',
+  email: '',
+  cliente_id: '',
+  ativo: true,
+  senha: '',
+}
 
 export default function Users() {
   const [users, setUsers] = useState<any[]>([])
@@ -77,7 +84,7 @@ export default function Users() {
     e.preventDefault()
     if (!modal.data.cliente_id) return
     setIsSaving(true)
-    const { id, ...payload } = modal.data
+    const { id, senha, ...payload } = modal.data
 
     let error = null
     let newRecord = null
@@ -109,7 +116,7 @@ export default function Users() {
     }
 
     if (!id && newRecord) {
-      const senhaTemporaria = Math.random().toString(36).slice(-8)
+      const senhaTemporaria = senha || Math.random().toString(36).slice(-8)
       const origin = window.location.origin
 
       const { error: invokeError } = await supabase.functions.invoke('send-welcome-email', {
@@ -179,7 +186,7 @@ export default function Users() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Usuários</h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Gerencie os acessos vinculados aos clientes.
+            Gerencie as credenciais e acessos vinculados aos clientes.
           </p>
         </div>
         <Button
@@ -218,7 +225,7 @@ export default function Users() {
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
               <TableHead className="font-semibold text-slate-900">Nome</TableHead>
               <TableHead className="font-semibold text-slate-900">Email</TableHead>
-              <TableHead className="font-semibold text-slate-900">Cliente</TableHead>
+              <TableHead className="font-semibold text-slate-900">Cliente (Empresa)</TableHead>
               <TableHead className="font-semibold text-slate-900 text-center">
                 Confirmação
               </TableHead>
@@ -313,7 +320,7 @@ export default function Users() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{modal.mode === 'create' ? 'Novo Usuário' : 'Editar Usuário'}</DialogTitle>
-            <DialogDescription>Preencha os dados do usuário abaixo.</DialogDescription>
+            <DialogDescription>Preencha os dados do usuário para acesso.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -339,8 +346,24 @@ export default function Users() {
                 required
               />
             </div>
+            {modal.mode === 'create' && (
+              <div className="space-y-2">
+                <Label htmlFor="senha">Senha Inicial</Label>
+                <Input
+                  id="senha"
+                  type="text"
+                  value={modal.data.senha}
+                  onChange={(e) =>
+                    setModal((m) => ({ ...m, data: { ...m.data, senha: e.target.value } }))
+                  }
+                  required={modal.mode === 'create'}
+                  minLength={6}
+                  placeholder="Ex: senhaSegura123"
+                />
+              </div>
+            )}
             <div className="space-y-2">
-              <Label htmlFor="client">Cliente</Label>
+              <Label htmlFor="client">Vincular a Qual Cliente?</Label>
               <Select
                 value={modal.data.cliente_id}
                 onValueChange={(val) =>

@@ -2,6 +2,6 @@
   "_versions": {
     "send-reset-email": 6,
     "send-confirmation-email": 7,
-    "send-welcome-email": 3
+    "send-welcome-email": 4
   }
 }
