@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { sanitizeLookerUrl } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -93,6 +94,9 @@ export default function Widgets() {
 
     // Removemos os campos de relacionamento ou meta-dados que não devem ir no payload
     const { id, clientes, created_at, ...payload } = modal.data as any
+
+    // Sanitiza a URL antes de salvar
+    payload.url_looker = sanitizeLookerUrl(payload.url_looker)
 
     if (!id && payload.ordem === 0) {
       const cWidgets = widgets.filter((w) => w.cliente_id === payload.cliente_id)
@@ -295,6 +299,7 @@ export default function Widgets() {
                 onChange={(e) =>
                   setModal((m) => ({ ...m, data: { ...m.data, url_looker: e.target.value } }))
                 }
+                placeholder="https://lookerstudio.google.com/embed/reporting/..."
                 required
               />
             </div>

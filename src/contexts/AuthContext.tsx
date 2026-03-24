@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null)
   const [loading, setLoading] = useState(true)
   const [customerData, setCustomerData] = useState<any>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const loadRoleAndData = async (currentUser: User | null): Promise<AuthResultRole> => {
     if (!currentUser) {
@@ -66,23 +67,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true
 
-    const initializeAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+    // Fetch initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isMounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsInitialized(true)
+      }
+    })
+
+    // Listen for auth changes (synchronous only inside callback)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (isMounted) {
         setSession(session)
         setUser(session?.user ?? null)
       }
-    }
-
-    initializeAuth()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
     })
 
     return () => {
@@ -92,9 +93,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   useEffect(() => {
+    // Prevent premature role loading and loading state flip before initialization
+    if (!isInitialized) return
+
     let isMounted = true
+
     if (user) {
+      setLoading(true) // Ensure we are loading while fetching role
       loadRoleAndData(user).then((r) => {
+        if (!isMounted) return
+
         if (r === 'unconfirmed') {
           supabase.auth.signOut().then(() => {
             if (isMounted) setLoading(false)
@@ -108,10 +116,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setCustomerData(null)
       setLoading(false)
     }
+
     return () => {
       isMounted = false
     }
-  }, [user])
+  }, [user, isInitialized])
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
