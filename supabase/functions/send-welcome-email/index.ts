@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
 
   try {
     const { email, senha_temporaria, resetUrl } = await req.json()
-
+    
     if (!email || !senha_temporaria) {
       throw new Error('E-mail e senha temporária são obrigatórios')
     }
@@ -35,17 +35,17 @@ Deno.serve(async (req) => {
 
     if (!resendApiKey) {
       console.log('Simulated welcome email send for:', email)
-      return new Response(JSON.stringify({ message: 'Simulated welcome email send' }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ message: "Simulated welcome email send" }), {
+         status: 200,
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
@@ -67,8 +67,8 @@ Deno.serve(async (req) => {
             </div>
             <p style="font-size: 14px; color: #666;">Se você tiver alguma dúvida ou não esperava este e-mail, entre em contato com o suporte.</p>
           </div>
-        `,
-      }),
+        `
+      })
     })
 
     if (!res.ok) {
@@ -76,14 +76,15 @@ Deno.serve(async (req) => {
       throw new Error(`Resend API error: ${resError}`)
     }
 
-    return new Response(JSON.stringify({ message: 'Welcome email sent successfully' }), {
+    return new Response(JSON.stringify({ message: "Welcome email sent successfully" }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
