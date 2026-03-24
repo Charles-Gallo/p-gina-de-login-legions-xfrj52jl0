@@ -14,34 +14,61 @@ Deno.serve(async (req) => {
   try {
     const { email, redirectTo } = await req.json()
 
+    if (!email) {
+      throw new Error('E-mail é obrigatório')
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Generate recovery link using admin API
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: {
-        redirectTo,
+    // Configura o client explicitamente sem persistência de sessão para evitar
+    // poluição de estado entre requisições em Deno Edge Functions
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+        },
       },
     })
 
+    const options: any = {}
+    if (redirectTo) {
+      options.redirectTo = redirectTo
+    }
+
+    // Generate recovery link using admin API
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      ...(Object.keys(options).length > 0 ? { options } : {}),
+    })
+
     if (error) {
+      console.error('generateLink error:', error)
       // Return success anyway to prevent email enumeration
       return new Response(JSON.stringify({ message: 'Request processed' }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const actionLink = data.properties.action_link
+    const actionLink = data?.properties?.action_link
+    if (!actionLink) {
+      throw new Error('Não foi possível gerar o link de recuperação')
+    }
+
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const senderEmail = Deno.env.get('SENDER_EMAIL') || 'onboarding@resend.dev'
 
     if (!resendApiKey) {
       console.log('No RESEND_API_KEY set. Simulated action_link:', actionLink)
       return new Response(JSON.stringify({ message: 'Simulated email send' }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -79,10 +106,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ message: 'Email sent' }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error('Function error:', err)
+    return new Response(JSON.stringify({ error: err.message || 'Ocorreu um erro interno' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

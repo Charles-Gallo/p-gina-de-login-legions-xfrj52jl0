@@ -16,7 +16,19 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      },
+    })
 
     // Cria o usuário no Auth do Supabase (ignora se já existir)
     const { error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -81,7 +93,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error('Function error:', err)
+    return new Response(JSON.stringify({ error: err.message || 'Ocorreu um erro interno' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
