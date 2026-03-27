@@ -4,7 +4,7 @@ import { LogOut, ExternalLink, BarChart3, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
-import { sanitizeLookerUrl } from '@/lib/utils'
+import { getLookerUrls } from '@/lib/utils'
 import { Logo } from '@/components/Logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
@@ -133,7 +133,7 @@ export default function CustomerDashboard() {
               </div>
             ) : (
               widgets.map((widget) => {
-                const cleanUrl = sanitizeLookerUrl(widget.url_looker)
+                const { embedUrl, externalUrl } = getLookerUrls(widget.url_looker)
 
                 return (
                   <Card
@@ -156,7 +156,7 @@ export default function CustomerDashboard() {
                         className="text-[#1268b3] hover:text-[#1268b3] hover:bg-[#1268b3]/10 transition-colors"
                       >
                         <a
-                          href={cleanUrl}
+                          href={externalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Abrir relatório em nova guia"
@@ -169,7 +169,7 @@ export default function CustomerDashboard() {
                     <div className="w-full flex-1 bg-slate-100 relative">
                       {/* Looker Studio recommended iframe configuration */}
                       <iframe
-                        src={cleanUrl}
+                        src={embedUrl}
                         className="w-full h-full border-0 absolute inset-0"
                         allowFullScreen
                         sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
