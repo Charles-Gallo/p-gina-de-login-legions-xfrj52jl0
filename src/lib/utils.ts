@@ -1,4 +1,3 @@
-/* General utility functions (exposes cn) */
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -47,4 +46,11 @@ export function getLookerUrls(url: string): { embedUrl: string; externalUrl: str
   } catch (e) {
     return { embedUrl: url, externalUrl: url }
   }
+}
+
+/**
+ * Backwards compatibility wrapper
+ */
+export function sanitizeLookerUrl(url: string): string {
+  return getLookerUrls(url).embedUrl
 }
