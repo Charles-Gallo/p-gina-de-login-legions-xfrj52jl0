@@ -9,25 +9,25 @@ Deno.serve(async (req) => {
 
   try {
     const { email, senha_temporaria, resetUrl } = await req.json()
-    
+
     if (!email || !senha_temporaria) {
       throw new Error('E-mail e senha temporária são obrigatórios')
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    
+
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
-        detectSessionInUrl: false
+        detectSessionInUrl: false,
       },
       global: {
         headers: {
-          Authorization: `Bearer ${supabaseKey}`
-        }
-      }
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      },
     })
 
     // Cria o usuário no Auth do Supabase (ignora se já existir)
@@ -47,17 +47,17 @@ Deno.serve(async (req) => {
 
     if (!resendApiKey) {
       console.log('Simulated welcome email send for:', email)
-      return new Response(JSON.stringify({ message: "Simulated welcome email send" }), {
-         status: 200,
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ message: 'Simulated welcome email send' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
@@ -79,8 +79,8 @@ Deno.serve(async (req) => {
             </div>
             <p style="font-size: 14px; color: #666;">Se você tiver alguma dúvida ou não esperava este e-mail, entre em contato com o suporte.</p>
           </div>
-        `
-      })
+        `,
+      }),
     })
 
     if (!res.ok) {
@@ -88,16 +88,15 @@ Deno.serve(async (req) => {
       throw new Error(`Resend API error: ${resError}`)
     }
 
-    return new Response(JSON.stringify({ message: "Welcome email sent successfully" }), {
+    return new Response(JSON.stringify({ message: 'Welcome email sent successfully' }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
   } catch (err: any) {
     console.error('Function error:', err)
     return new Response(JSON.stringify({ error: err.message || 'Ocorreu um erro interno' }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
