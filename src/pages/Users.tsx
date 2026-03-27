@@ -154,7 +154,11 @@ export default function Users() {
   const handleDelete = async () => {
     if (!deleteId) return
     setIsDeleting(true)
+
+    // A deleção na tabela usuarios_cliente dispara automaticamente o trigger no banco
+    // que apaga também o registro correspondente na tabela auth.users.
     const { error } = await supabase.from('usuarios_cliente').delete().eq('id', deleteId)
+
     setIsDeleting(false)
     if (error) {
       toast({
@@ -164,7 +168,13 @@ export default function Users() {
       })
       return
     }
-    toast({ title: 'Usuário removido' })
+
+    toast({
+      title: 'Usuário removido com sucesso',
+      description:
+        'O perfil e as credenciais de acesso foram excluídos permanentemente de todos os registros.',
+    })
+
     setDeleteId(null)
     fetchData()
   }
@@ -419,7 +429,7 @@ export default function Users() {
         onConfirm={handleDelete}
         isDeleting={isDeleting}
         title="Excluir Usuário"
-        description="Tem certeza que deseja excluir este usuário? O acesso dele será revogado imediatamente."
+        description="Tem certeza que deseja excluir este usuário? O acesso dele será revogado permanentemente e não poderá ser recuperado."
       />
     </div>
   )
