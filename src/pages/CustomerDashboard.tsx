@@ -23,15 +23,18 @@ export default function CustomerDashboard() {
     }
   }, [loading, isAuthenticated, role, navigate])
 
+  const clienteId = customerData?.cliente_id
+  const hasCustomerData = !!customerData
+
   useEffect(() => {
     let isMounted = true
 
-    if (customerData?.cliente_id) {
+    if (clienteId) {
       setIsLoadingWidgets(true)
       supabase
         .from('widgets')
         .select('*')
-        .eq('cliente_id', customerData.cliente_id)
+        .eq('cliente_id', clienteId)
         .eq('ativo', true)
         .order('ordem', { ascending: true })
         .then(({ data, error }) => {
@@ -49,7 +52,7 @@ export default function CustomerDashboard() {
           }
           setIsLoadingWidgets(false)
         })
-    } else if (customerData && !customerData.cliente_id) {
+    } else if (hasCustomerData && !clienteId) {
       if (isMounted) {
         toast({
           variant: 'destructive',
@@ -67,7 +70,7 @@ export default function CustomerDashboard() {
     return () => {
       isMounted = false
     }
-  }, [customerData, toast])
+  }, [clienteId, hasCustomerData, toast])
 
   const handleLogout = async () => {
     await signOut()
