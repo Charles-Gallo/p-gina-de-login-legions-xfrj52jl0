@@ -84,7 +84,8 @@ export default function Users() {
     e.preventDefault()
     if (!modal.data.cliente_id) return
     setIsSaving(true)
-    const { id, senha, ...payload } = modal.data
+    const { id, senha, nome_usuario, email, cliente_id, ativo } = modal.data
+    const payload = { nome_usuario, email, cliente_id, ativo }
 
     let error = null
     let newRecord = null
