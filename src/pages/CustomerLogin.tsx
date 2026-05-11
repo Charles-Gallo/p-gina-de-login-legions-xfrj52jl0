@@ -80,7 +80,7 @@ export default function CustomerLogin() {
           <Logo className="mb-2" />
           <div className="space-y-1">
             <CardTitle className="text-2xl font-semibold tracking-tight">
-              Portal do Cliente
+              Dashboard de Tráfego
             </CardTitle>
             <CardDescription className="text-sm">
               Acesse sua conta para gerenciar seus serviços
