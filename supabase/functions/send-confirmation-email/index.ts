@@ -27,10 +27,10 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
         to: email,
-        subject: 'Confirmação de E-mail - Legions',
+        subject: 'Confirmação de E-mail - Dashboard de Tráfego',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #1268b3;">Bem-vindo(a) à Legions!</h2>
+            <h2 style="color: #1268b3;">Bem-vindo(a) ao Dashboard de Tráfego!</h2>
             <p>Por favor, confirme seu endereço de e-mail para ter acesso à plataforma.</p>
             <div style="margin: 30px 0;">
               <a href="${confirmationUrl}" style="background-color: #1268b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">

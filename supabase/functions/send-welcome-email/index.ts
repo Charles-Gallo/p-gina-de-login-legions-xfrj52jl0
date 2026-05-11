@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
         to: email,
-        subject: 'Bem-vindo(a) à Legions - Suas Credenciais',
+        subject: 'Bem-vindo(a) ao Dashboard de Tráfego - Suas Credenciais',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <h2 style="color: #1268b3;">Bem-vindo(a) à Legions!</h2>

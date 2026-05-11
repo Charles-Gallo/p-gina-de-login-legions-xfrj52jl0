@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: `Legions <${senderEmail}>`,
         to: email,
-        subject: 'Recuperação de Senha - Legions',
+        subject: 'Recuperação de Senha - Dashboard de Tráfego',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #1268b3;">Recuperação de Senha</h2>
