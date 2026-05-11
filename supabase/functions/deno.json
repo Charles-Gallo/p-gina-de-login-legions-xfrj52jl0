@@ -1,7 +1,7 @@
 {
   "_versions": {
-    "send-reset-email": 8,
-    "send-confirmation-email": 9,
-    "send-welcome-email": 7
+    "send-reset-email": 10,
+    "send-confirmation-email": 11,
+    "send-welcome-email": 9
   }
 }
