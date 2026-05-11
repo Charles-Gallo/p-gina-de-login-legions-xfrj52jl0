@@ -10,7 +10,7 @@ export default function Layout() {
         </main>
 
         <footer className="py-6 text-center text-sm text-muted-foreground bg-white/50 backdrop-blur-sm border-t">
-          <p>© {new Date().getFullYear()} Legions. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} Dashboard de Tráfego. Todos os direitos reservados.</p>
         </footer>
       </div>
     </AuthProvider>
