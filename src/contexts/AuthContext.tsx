@@ -41,22 +41,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const isClienteMetadata = currentUser.user_metadata?.role === 'cliente'
 
-    const { data } = await supabase
-      .from('usuarios_cliente')
-      .select('*, clientes(*)')
-      .eq('email', currentUser.email)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('usuarios_cliente')
+        .select('*, clientes(*)')
+        .eq('email', currentUser.email)
+        .single()
 
-    if (data && data.email_confirmado === false) {
-      setRole(null)
-      setCustomerData(null)
-      return 'unconfirmed'
-    }
+      if (error && !isClienteMetadata && error.code !== 'PGRST116') {
+        setRole(null)
+        setCustomerData(null)
+        return null
+      }
 
-    if (isClienteMetadata || (data && data.ativo)) {
-      setRole('cliente')
-      setCustomerData(data)
-      return 'cliente'
+      if (data && data.email_confirmado === false) {
+        setRole(null)
+        setCustomerData(null)
+        return 'unconfirmed'
+      }
+
+      if (isClienteMetadata || (data && data.ativo)) {
+        setRole('cliente')
+        setCustomerData(data || null)
+        return 'cliente'
+      }
+    } catch (err) {
+      if (isClienteMetadata) {
+        setRole('cliente')
+        return 'cliente'
+      }
     }
 
     setRole(null)
@@ -67,14 +80,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true
 
-    // Fetch initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (isMounted) {
-        setSession(session)
-        setUser(session?.user ?? null)
+    // Fallback timeout for initialization
+    const initTimeout = setTimeout(() => {
+      if (isMounted && !isInitialized) {
         setIsInitialized(true)
+        setLoading(false)
       }
-    })
+    }, 5000)
+
+    // Fetch initial session
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (isMounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          setIsInitialized(true)
+          clearTimeout(initTimeout)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsInitialized(true)
+          setLoading(false)
+          clearTimeout(initTimeout)
+        }
+      })
 
     // Listen for auth changes (synchronous only inside callback)
     const {
@@ -88,6 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       isMounted = false
+      clearTimeout(initTimeout)
       subscription.unsubscribe()
     }
   }, [])
@@ -109,20 +141,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (user) {
       setLoading(true) // Ensure we are loading while fetching role
-      loadRoleAndData(user).then((r) => {
-        if (!isMounted) return
 
-        if (r === 'unconfirmed') {
-          supabase.auth.signOut().then(() => {
-            if (isMounted) {
-              setLoading(false)
-              previousUserId.current = null
-            }
-          })
-        } else {
+      const roleTimeoutId = setTimeout(() => {
+        if (isMounted) setLoading(false)
+      }, 5000)
+
+      loadRoleAndData(user)
+        .then((r) => {
+          clearTimeout(roleTimeoutId)
+          if (!isMounted) return
+
+          if (r === 'unconfirmed') {
+            supabase.auth
+              .signOut()
+              .then(() => {
+                if (isMounted) {
+                  setLoading(false)
+                  previousUserId.current = null
+                }
+              })
+              .catch(() => {
+                if (isMounted) setLoading(false)
+              })
+          } else {
+            if (isMounted) setLoading(false)
+          }
+        })
+        .catch(() => {
+          clearTimeout(roleTimeoutId)
           if (isMounted) setLoading(false)
-        }
-      })
+        })
     } else {
       setRole(null)
       setCustomerData(null)
