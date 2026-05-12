@@ -68,6 +68,14 @@ export default function CustomerLogin() {
     }
   }
 
+  if (loading || role === 'cliente') {
+    return (
+      <div className="w-full max-w-[400px] min-h-[400px] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1268b3]" />
+      </div>
+    )
+  }
+
   return (
     <div className="w-full max-w-[400px]">
       <Card

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
@@ -92,10 +92,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
+  const previousUserId = useRef<string | null>(null)
+
   useEffect(() => {
     // Prevent premature role loading and loading state flip before initialization
     if (!isInitialized) return
 
+    // Avoid triggering on token refresh / tab focus when user id hasn't changed
+    const currentUserId = user?.id || null
+    if (currentUserId === previousUserId.current && currentUserId !== null) {
+      return
+    }
+
+    previousUserId.current = currentUserId
     let isMounted = true
 
     if (user) {
@@ -105,7 +114,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (r === 'unconfirmed') {
           supabase.auth.signOut().then(() => {
-            if (isMounted) setLoading(false)
+            if (isMounted) {
+              setLoading(false)
+              previousUserId.current = null
+            }
           })
         } else {
           if (isMounted) setLoading(false)
