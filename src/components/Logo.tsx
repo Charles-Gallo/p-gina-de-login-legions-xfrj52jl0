@@ -12,7 +12,9 @@ export function Logo({ className, showText = true, ...props }: LogoProps) {
         alt="Legions Logo"
         className="h-10 w-10 rounded-md object-contain shadow-sm"
       />
-      {showText && <span className="text-2xl font-bold tracking-tight text-[#1268b3]">Portal</span>}
+      {showText && (
+        <span className="text-2xl font-bold tracking-tight text-[#5D80A3]">Charles Gallo</span>
+      )}
     </div>
   )
 }
